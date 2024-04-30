@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "161800419142",
+    "project_id": "travel-season-54aac",
+    "storage_bucket": "travel-season-54aac.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:161800419142:android:21c832e902b5d072209747",
+        "android_client_info": {
+          "package_name": "com.example.travelzone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWTsZSqWwpbjZcu011eAx2W6v_qU7Ocz8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
