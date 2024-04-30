@@ -51,6 +51,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
   @override
   Widget build(BuildContext context) {
+     if (widget.user == null) {
+      return Text('Пользователь не вошел в систему');
+    }
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),

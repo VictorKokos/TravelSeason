@@ -24,7 +24,16 @@ User? _currentUser; // Добавляем переменную для хране
     _formKey.currentState?.reset(); // Очищаем поля формы
   }
 
-
+@override
+  void initState() {
+    super.initState();
+    // Подписываемся на изменения состояния аутентификации
+    FirebaseAuth.instance.authStateChanges().listen((user) { 
+      setState(() {
+        _currentUser = user; // Обновляем состояние с текущим пользователем
+      });
+    });
+  }
 
    @override
   Widget build(BuildContext context) {
@@ -35,13 +44,12 @@ User? _currentUser; // Добавляем переменную для хране
       body: _currentUser != null
           ? ProfileWidget( // Отображаем ProfileWidget, если пользователь вошел в систему
               user: _currentUser!,
-              onSignOut: () {
-                // Логика выхода из системы
-                _authService.signOut();
-                setState(() {
-                  _currentUser = null;
-                });
-              },
+             onSignOut: () async {
+  await _authService.signOut();
+  setState(() {
+    _currentUser = null; // Обновляем состояние _currentUser
+  });
+},
             )
           : Padding( // Отображаем форму входа/регистрации, если пользователь не вошел
               padding: const EdgeInsets.all(16.0),

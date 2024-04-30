@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:travelzone/screens/profile_screen.dart'; // Импорт ProfileScreen
+import 'package:travelzone/screens/profile_screen.dart';
 import '../widgets/tour_item.dart';
 
-
-class HomeScreen extends StatefulWidget  {
-  
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
-
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0; // Индекс выбранного элемента BottomNavigationBar
+  int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
     setState(() {
@@ -21,35 +18,33 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     if (_selectedIndex == 3) {
-      // Переход на ProfileScreen, когда выбран последний элемент
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ProfileScreen()),
-      );
+      ).then((_) => setState(() {})); // Обновляем состояние после возвращения с ProfileScreen
     }
   }
- @override
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: RichText( // Используем RichText для форматирования части текста
+        title: RichText(
           text: const TextSpan(
             style: TextStyle(fontSize: 18),
             children: [
               TextSpan(text: 'Hello there, '),
               TextSpan(
                 text: 'Ana!',
-                style: TextStyle(color: Colors.orange), // Оранжевый цвет для имени
+                style: TextStyle(color: Colors.orange),
               ),
             ],
           ),
         ),
-       actions: const [
+        actions: const [
           CircleAvatar(
-            backgroundImage: AssetImage('assets/images/profile_picture.jpg'), // Путь к изображению профиля
-            radius: 50, // Настройте радиус по необходимости
-        
-
+            backgroundImage: AssetImage('assets/images/profile_picture.jpg'),
+            radius: 50,
           ),
         ],
       ),
@@ -59,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+             
               Text(
                 'Select a category',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -100,34 +96,12 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(height: 16),
               // Cuisine list
              
+            
             ],
           ),
         ),
       ),
-    bottomNavigationBar: BottomNavigationBar(
-  items: const [
-    BottomNavigationBarItem(
-      icon: Icon(Icons.home),
-      label: 'Home',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.search),
-      label: 'Search',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.favorite),
-      label: 'Favorites',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.person),
-      label: 'Profile',
-    ),
-  ],
-   currentIndex: _selectedIndex,
-        selectedItemColor: Colors.orange,
-        unselectedItemColor: Colors.black,
-        onTap: _onItemTapped, // Обработчик нажатия на элемент 
-),
+     
     );
   }
 }
