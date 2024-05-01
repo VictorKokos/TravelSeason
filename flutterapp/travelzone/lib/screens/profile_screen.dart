@@ -29,6 +29,7 @@ User? _currentUser; // Добавляем переменную для хране
     super.initState();
     // Подписываемся на изменения состояния аутентификации
     FirebaseAuth.instance.authStateChanges().listen((user) { 
+        print('authStateChanges: user = $user');
       setState(() {
         _currentUser = user; // Обновляем состояние с текущим пользователем
       });
@@ -36,28 +37,35 @@ User? _currentUser; // Добавляем переменную для хране
   }
 
    @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Профиль'),
-      ),
-      body: _currentUser != null
-          ? ProfileWidget( // Отображаем ProfileWidget, если пользователь вошел в систему
-              user: _currentUser!,
-             onSignOut: () async {
-  await _authService.signOut();
-  setState(() {
-    _currentUser = null; // Обновляем состояние _currentUser
-  });
-},
-            )
-          : Padding( // Отображаем форму входа/регистрации, если пользователь не вошел
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-              
-          key: _formKey,
-          child: Column(
-            children: [
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Профиль'),
+    ),
+    body: FutureBuilder<User?>(
+      future: _authService.getCurrentUser(), 
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator(); // Индикатор загрузки
+        } else if (snapshot.hasError) {
+          return Text('Ошибка: ${snapshot.error}');
+        } else if (snapshot.hasData && snapshot.data != null) {
+          return ProfileWidget(
+            user: snapshot.data!,
+            onSignOut: () async {
+              await _authService.signOut();
+              setState(() {}); 
+            },
+          );
+        } else {
+          // Пользователь не аутентифицирован, отображаем форму входа
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
@@ -98,12 +106,16 @@ User? _currentUser; // Добавляем переменную для хране
                   style: const TextStyle(color: Colors.blue),
                 ),
               ),
-            ],
-          ),
+            
+                ],
               ),
             ),
-    );
-  }
+          );
+        }
+      },
+    ),
+  );
+}
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
