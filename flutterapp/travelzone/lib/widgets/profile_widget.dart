@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:travelzone/auth_service.dart';
 class ProfileWidget extends StatefulWidget {
   final User user;
   final Function() onSignOut;
 
-  const ProfileWidget({Key? key, required this.user, required this.onSignOut})
+final Function(User user, String firstName, String lastName) onUpdateProfile; 
+  const ProfileWidget({Key? key, required this.user, required this.onSignOut, required this.onUpdateProfile})
       : super(key: key);
 
   @override
@@ -33,7 +34,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   }
 
   Future<void> _updateProfile() async {
-    if (_formKey.currentState!.validate()) {
+   if (_formKey.currentState!.validate()) {
       try {
         await widget.user.updateDisplayName(
             '${_firstNameController.text} ${_lastNameController.text}');
@@ -41,6 +42,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           _errorMessage = null;
         });
         // Возможно, потребуется дополнительная логика для сохранения данных в Firestore
+         widget.onUpdateProfile(widget.user, _firstNameController.text, _lastNameController.text);
       } catch (e) {
         setState(() {
           _errorMessage = 'Ошибка при обновлении профиля';

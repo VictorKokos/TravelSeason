@@ -13,7 +13,7 @@ class SearchScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Поиск'),
       ),
-      body: SingleChildScrollView( // Используем SingleChildScrollView для прокрутки
+      body: const SingleChildScrollView( // Используем SingleChildScrollView для прокрутки
         child: Column(
           children: [
             // Здесь будут элементы поиска, например:

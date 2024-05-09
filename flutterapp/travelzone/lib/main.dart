@@ -7,10 +7,15 @@ import 'package:travelzone/screens/home_screen.dart';
 import 'package:travelzone/screens/search_screen.dart';
 import 'package:travelzone/screens/favorites_screen.dart';
 import 'package:travelzone/screens/profile_screen.dart';
+import 'data.dart';
 
-void main() async {
+Future<void>  main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+    //await prefillData(); 
+
+
   runApp(const MyApp());
 }
 

@@ -55,7 +55,9 @@ Widget build(BuildContext context) {
             onSignOut: () async {
               await _authService.signOut();
               setState(() {}); 
+              
             },
+            onUpdateProfile: _authService.updateUserProfile,
           );
         } else {
           // Пользователь не аутентифицирован, отображаем форму входа
