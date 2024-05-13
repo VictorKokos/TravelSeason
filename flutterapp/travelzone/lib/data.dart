@@ -97,7 +97,12 @@ const List<Map<String, dynamic>> hotelsData = [
   // ... остальные туры
 ];
 
-
+const List<Map<String, dynamic>> countriesData = [
+  {"name": "Италия"},
+  {"name": "Япония"},
+  {"name": "Кения"},
+  // ... другие страны
+];
 
 
 Future<void> clearHotelsData() async {
@@ -118,7 +123,14 @@ Future<void> clearToursData() async {
 }
 
 
-
+Future<void> clearCountriesData() async {
+  final countriesRef = FirebaseFirestore.instance.collection('countries');
+  final snapshot = await countriesRef.get();
+  for (final doc in snapshot.docs) {
+    await doc.reference.delete();
+  }
+  print('Данные из коллекции "countries" успешно удалены.');
+}
 
 Future<String> uploadImageToCloudinary(String imagePath) async {
   final cloudinary = CloudinaryPublic('dfdinr6zu', 'ml_default', cache: false);
@@ -142,15 +154,27 @@ Future<void> prefillData() async {
   final firestore = FirebaseFirestore.instance;
   final hotelsRef = firestore.collection('hotels');
   final toursRef = firestore.collection('tours');
+  final countriesRef = firestore.collection('countries');
 
  // 1. Очищаем данные в обеих коллекциях
   print("Начало очистки данных...");
   await clearHotelsData();
-  print("Очистка коллекции 'hotels' завершена.");
   await clearToursData(); 
-  print("Очистка коллекции 'tours' завершена.");
+   await clearCountriesData(); 
+ 
 
-  // 2. Добавляем отели и сохраняем их ID
+ // 2. Добавляем страны
+print("Начало добавления стран...");
+  final countryIds = <String, String>{}; // Используем Map для хранения ID стран
+  for (final country in countriesData) {
+    final docRef = await countriesRef.add(country);
+    countryIds[country['name']] = docRef.id;
+    print("Страна добавлена с ID: ${docRef.id}");
+  }
+  print("Добавление стран завершено.");
+
+
+  // 3. Добавляем отели и сохраняем их ID
   print("Начало добавления отелей...");
   final hotelIds = <String>[];
   for (final hotel in hotelsData) {
@@ -159,16 +183,15 @@ Future<void> prefillData() async {
     print("Отель добавлен с ID: ${docRef.id}"); // Логирование ID добавленного отеля
   }
   print("Добавление отелей завершено.");
-  // 3. Добавляем туры, используя сохраненные ID отелей
+  // 4. Добавляем туры, используя сохраненные ID отелей и стран
 
-  print('Начало добавления туров...');
+ print('Начало добавления туров...');
   for (var i = 0; i < toursData.length; i++) {
- final tourData = toursData[i];
-  final tour = {...tourData}; // Создаем копию объекта тура 
-    print('Обработка тура: $tour');  // Добавьте логирование для проверки данных тура
+    final tourData = toursData[i];
+    final tour = {...tourData};
+    print('Обработка тура: $tour');
 
-
-if (tour['image'] != null && tour['image'] is String) {
+    if (tour['image'] != null && tour['image'] is String) {
       String imagePath =
           'D:\\Work\\3k2s\\kusrach5\\Project\\Images\\Tours\\${tour['image']}';
       print('Загрузка изображения: $imagePath');
@@ -181,18 +204,17 @@ if (tour['image'] != null && tour['image'] is String) {
       }
     }
 
-
     try {
-      tour['hotel_id'] = hotelIds[i];// Связываем тур с соответствующим отелем
+      tour['hotel_id'] = hotelIds[i];
+      tour['country'] = countryIds[tour['country']]; // Заменяем название страны на ссылку
       await toursRef.add(tour);
-      print('Тур успешно добавлен.'); 
+      print('Тур успешно добавлен.');
     } catch (e) {
       print('Ошибка при добавлении тура: $e');
     }
   }
   print('Добавление туров завершено.');
-
  
 }
 
-// Функция для очистки данных из коллекции "tours"
+
