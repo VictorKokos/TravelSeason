@@ -7,11 +7,19 @@ environment:
   sdk: '>=3.2.6 <4.0.0'
 
 dependencies:
+  dio: ^5.1.0 
+  image_picker: ^1.0.0
   cloud_firestore: ^4.17.2
   firebase_auth: ^4.17.8
   firebase_core: ^2.27.0
+  cloudinary_flutter: ^1.0.0
+  cloudinary_url_gen: ^1.0.0
+  firebase_storage: ^11.7.4
+  file_picker: ^5.2.5
   flutter:
     sdk: flutter
+  cloudinary_public: ^0.23.1
+  
 
 dev_dependencies:
   flutter_test:

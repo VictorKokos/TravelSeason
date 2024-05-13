@@ -1,11 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:travelzone/screens/tour_details_screen.dart'; 
+import 'package:travelzone/screens/tour_details_screen.dart';
 
 class TourItem extends StatelessWidget {
   final String tourId; // ID тура из Firestore
-
-  const TourItem({Key? key, required this.tourId}) : super(key: key); 
+  const TourItem({Key? key, required this.tourId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -22,66 +21,75 @@ class TourItem extends StatelessWidget {
           final duration = tourData['duration']; // Предполагаем, что у тура есть поле duration
           final price = tourData['price'];
 
+          // Выводим URL изображения в консоль
+          print('Image URL: $imageUrl'); 
+
           return SizedBox(
             width: 300,
-            child:Card(
-  clipBehavior: Clip.antiAlias,
-  child: InkWell(
-    onTap: () {
-      // Переход к экрану деталей тура при нажатии
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TourDetailsScreen(tourId: tourId),
-        ),
-      );
-    },
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Изображение тура
-        Image.network(
-          imageUrl,
-          height: 150,
-          width: double.infinity,
-          fit: BoxFit.cover,
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Название тура
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () {
+                  // Переход к экрану деталей тура при нажатии
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TourDetailsScreen(tourId: tourId),
+                    ),
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Изображение тура
+                 if (imageUrl != null && imageUrl.isNotEmpty)
+                Image.network(
+                  imageUrl,
+                  height: 150,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                )
+                 
+              else
+                const SizedBox(
+                    height: 150, child: Center(child: Text('Нет изображения'))),
+
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Название тура
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Страна
+                          Text(
+                            tourData['country'], // Используем 'country' из данных
+                            style: const TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          // Цена
+                          Text(
+                            '\$$price', // Отображаем цену с символом доллара
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              // Страна
-              Text(
-                tourData['country'], // Используем 'country' из данных
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              // Цена
-              Text(
-                '\$$price', // Отображаем цену с символом доллара
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  ),
-)
+            ),
           );
         } else if (snapshot.hasError) {
           return Text('Ошибка: ${snapshot.error}');

@@ -1,6 +1,13 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 class AuthService {
   final FirebaseAuth _auth;
 
@@ -78,12 +85,33 @@ Future<void> createUserDocument(User user) async {
   });
 }
 
-Future<void> updateUserProfile(User user, String firstName, String lastName) async {
-  final firestore = FirebaseFirestore.instance;
-  // Обновляем поля firstName и lastName
-  await firestore.collection('users').doc(user.uid).update({
-    'firstName': firstName,
-    'lastName': lastName,
-  });
-}
+Future<void> updateUserProfile(
+      User user, String firstName, String lastName, PlatformFile? image) async {
+    final firestore = FirebaseFirestore.instance;
+
+    // Загружаем изображение профиля, если оно выбрано
+    String? photoURL;
+  if (image != null && image.path != null) { // Проверяем, что image.path не null
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child('user_profiles/${user.uid}.jpg');
+    await storageRef.putFile(File(image.path!)); // Используем ! для указания, что image.path не null
+    photoURL = await storageRef.getDownloadURL();
+  }
+
+    // Обновляем поля firstName, lastName и photoURL
+    await firestore.collection('users').doc(user.uid).update({
+      'firstName': firstName,
+      'lastName': lastName,
+      if (photoURL != null) 'photoURL': photoURL,
+    });
+
+    // Обновляем displayName пользователя в FirebaseAuth
+    await user.updateDisplayName('$firstName $lastName');
+
+    // При необходимости, обновите photoURL пользователя в FirebaseAuth
+    if (photoURL != null) {
+      await user.updatePhotoURL(photoURL);
+    }
+  }
 }

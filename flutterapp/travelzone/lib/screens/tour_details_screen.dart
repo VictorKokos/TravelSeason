@@ -18,7 +18,10 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    tourFuture = FirebaseFirestore.instance.collection('tours').doc(widget.tourId).get();
+    tourFuture = FirebaseFirestore.instance
+        .collection('tours')
+        .doc(widget.tourId)
+        .get();
   }
 
   @override
@@ -31,18 +34,20 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
         future: tourFuture,
         builder: (context, tourSnapshot) {
           if (tourSnapshot.hasData && tourSnapshot.data!.exists) {
-            final tourData = tourSnapshot.data!.data() as Map<String, dynamic>;
+            final tourData =
+                tourSnapshot.data!.data() as Map<String, dynamic>;
             final hotelId = tourData['hotel_id'];
-
-            hotelFuture = FirebaseFirestore.instance.collection('hotels').doc(hotelId).get();
-
+            hotelFuture = FirebaseFirestore.instance
+                .collection('hotels')
+                .doc(hotelId)
+                .get();
             return FutureBuilder<DocumentSnapshot>(
               future: hotelFuture,
               builder: (context, hotelSnapshot) {
                 if (hotelSnapshot.hasData && hotelSnapshot.data!.exists) {
-                  final hotelData = hotelSnapshot.data!.data() as Map<String, dynamic>;
+                  final hotelData =
+                      hotelSnapshot.data!.data() as Map<String, dynamic>;
                   final hotelImages = hotelData['images'] as List<dynamic>;
-
                   return SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +94,9 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
                               // Местоположение
                               Text(
                                 hotelData['location'],
-                                style: const TextStyle(fontSize: 16),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                ),
                               ),
                               const SizedBox(height: 16),
                               // Описание
@@ -99,16 +106,17 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
                               ),
                               const SizedBox(height: 16),
                               // Удобства
-                              Text(
+                              const Text(
                                 'Amenities:',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               // Список удобств
-                              ...hotelData['amenities'].map<Widget>((amenity) {
+                              ...hotelData['amenities']
+                                  .map<Widget>((amenity) {
                                 return Text('- $amenity');
                               }).toList(),
                             ],
@@ -116,30 +124,72 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
                         ),
                         // Кнопки действий
                         Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 24.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16.0),
+                                  textStyle:
+                                      const TextStyle(color: Colors.white),
+                                ),
                                 onPressed: () {
                                   // TODO: Добавить функционал добавления в закладки
                                 },
-                                icon: const Icon(Icons.bookmark_border),
-                                label: const Text('Add to bookmarks'),
+                                icon: const Icon(
+                                  Icons.bookmark_border,
+                                  color: Colors.white,
+                                ),
+                                label: const Text(
+                                  'Add to bookmarks',
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ),
+                              const SizedBox(height: 16),
                               ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16.0),
+                                  textStyle:
+                                      const TextStyle(color: Colors.white),
+                                ),
                                 onPressed: () {
-                                  // TODO: Добавить функционал выбора рейса 
+                                  // TODO: Добавить функционал выбора рейса
                                 },
-                                icon: const Icon(Icons.flight_takeoff),
-                                label: const Text('Select flight'),
+                                icon: const Icon(
+                                  Icons.flight_takeoff,
+                                  color: Colors.white,
+                                ),
+                                label: const Text(
+                                  'Select flight',
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ),
+                              const SizedBox(height: 16),
                               ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16.0),
+                                  textStyle:
+                                      const TextStyle(color: Colors.white),
+                                ),
                                 onPressed: () {
-                                  // TODO: Переход на вкладку с отзывами 
-                                }, 
-                                icon: const Icon(Icons.reviews),
-                                label: const Text('Reviews'),
+                                  // TODO: Переход на вкладку с отзывами
+                                },
+                                icon: const Icon(
+                                  Icons.reviews,
+                                  color: Colors.white,
+                                ),
+                                label: const Text(
+                                  'Reviews',
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ),
                             ],
                           ),
@@ -170,27 +220,26 @@ class DotsIndicator extends StatelessWidget {
   final int dotsCount;
   final double position;
 
-  const DotsIndicator({
-    Key? key,
-    required this.dotsCount,
-    this.position = 0.0,
-  }) : super(key: key);
+  const DotsIndicator(
+      {Key? key, required this.dotsCount, this.position = 0.0})
+      : super(key: key);
 
   @override
-Widget build(BuildContext context) {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: List.generate(dotsCount, (index) {
-      return Container(
-        width: 8,
-        height: 8,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle, // Используем BoxShape.circle для круглой формы
-          color: index == position ? Colors.blue : Colors.grey,
-        ),
-      );
-    }),
-  );
-}
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(dotsCount, (index) {
+        return Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            // Используем BoxShape.circle для круглой формы
+            color: index == position ? Colors.blue : Colors.grey,
+          ),
+        );
+      }),
+    );
+  }
 }

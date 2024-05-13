@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
 const List<Map<String, dynamic>> hotelsData = [
 {
   "name": "Hotel Belmond Splendido",
@@ -6,8 +9,8 @@ const List<Map<String, dynamic>> hotelsData = [
   "location": "Портофино, Италия",
   "star_rating": 5,
   "images": [
-    "https://example.com/splendido_1.jpg",
-    "https://example.com/splendido_2.jpg"
+    "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/hotels%2F2_1.jpg?alt=media&token=a1e0878c-31bb-4aa1-a73c-3b1bd4054257",
+    "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/hotels%2F2_2.jpg?alt=media&token=61eee0ea-d94b-4cdb-a99e-9ed62cfdffc0"
   ],
   "amenities": ["бассейн", "спа", "фитнес-центр", "ресторан", "Wi-Fi"],
   "reviews": [
@@ -29,8 +32,8 @@ const List<Map<String, dynamic>> hotelsData = [
   "location": "Киото, Япония",
   "star_rating": 4,
   "images": [
-    "https://example.com/hyatt_kyoto_1.jpg",
-    "https://example.com/hyatt_kyoto_2.jpg"
+    "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/hotels%2F3_1.jpg?alt=media&token=9c93dd4a-d7b7-457f-838c-10d575a3b2b8",
+    "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/hotels%2F3_2.jpg?alt=media&token=bad95c1b-4ea0-454a-a786-256dd22e7c20"
   ],
   "amenities": ["фитнес-центр", "ресторан", "бар", "Wi-Fi", "конференц-залы"],
   "reviews": [] // пустой массив, так как отзывов нет
@@ -41,8 +44,9 @@ const List<Map<String, dynamic>> hotelsData = [
   "location": "Масаи Мара, Кения",
   "star_rating": 4,
   "images": [
-    "https://example.com/mara_lodge_1.jpg",
-    "https://example.com/mara_lodge_2.jpg"
+    "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/hotels%2F1_1.jpg?alt=media&token=5945c967-4fa1-4823-a00f-9c4f43c27eb8",
+    "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/hotels%2F1_2.jpg?alt=media&token=4be5ad5e-79b6-4676-b464-d98bde317a87",
+    "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/hotels%2F1_3.jpg?alt=media&token=50701ec0-8d8c-4bbb-b6bd-f5086f8e5bfc"
   ],
   "amenities": ["бассейн", "ресторан", "бар", "наблюдение за животными", "Wi-Fi"],
   "reviews": [
@@ -65,7 +69,7 @@ const List<Map<String, dynamic>> hotelsData = [
   "end_date": 1693126400, // 25.08.2023 
   "hotel_id": "R2sREIlUjhhxNmkK8Rmi",
   "country": "Италия",
-  "image": "https://example.com/italian_riviera.jpg"
+  "image": "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/tours%2F1.jpg?alt=media&token=44ccd9b9-cbc5-4ff9-909c-c311277a816c"
 },
   {
     
@@ -76,7 +80,7 @@ const List<Map<String, dynamic>> hotelsData = [
   "end_date": 1702918400, // 10.10.2023 
   "hotel_id": "eRzgfSB8t93LmavZVSaK",
   "country": "Япония",
-  "image": "https://example.com/kyoto_fall.jpg" 
+  "image": "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/tours%2F2.jpg?alt=media&token=857b18e5-a274-49b1-92fa-1a5d85183d70" 
 },
 
 
@@ -88,7 +92,7 @@ const List<Map<String, dynamic>> hotelsData = [
     "start_date": 1694326400, // 10.09.2023
     "end_date": 1695916800, // 24.09.2023 
     "country": "Кения",
-    "image": "https://example.com/kenya_safari.jpg"
+    "image": "https://firebasestorage.googleapis.com/v0/b/travel-season-54aac.appspot.com/o/tours%2F3.jpg?alt=media&token=c3548c8f-ab2d-4c95-a4ed-920e91006438"
   },
   // ... остальные туры
 ];
@@ -112,6 +116,28 @@ Future<void> clearToursData() async {
   }
   print('Данные из коллекции "tours" успешно удалены.');
 }
+
+
+
+
+Future<String> uploadImageToCloudinary(String imagePath) async {
+  final cloudinary = CloudinaryPublic('dfdinr6zu', 'ml_default', cache: false);
+  
+  try {
+    print('Начинаем загрузку изображения: $imagePath'); 
+    CloudinaryResponse response = await cloudinary.uploadFile(
+      CloudinaryFile.fromFile(imagePath),
+    );
+    print('Изображение успешно загружено: ${response.secureUrl}'); 
+    return response.secureUrl;
+  } catch (e) {
+    print('Ошибка загрузки изображения: $e');
+    return ''; 
+  }
+}
+
+
+
 Future<void> prefillData() async {
   final firestore = FirebaseFirestore.instance;
   final hotelsRef = firestore.collection('hotels');
@@ -134,12 +160,28 @@ Future<void> prefillData() async {
   }
   print("Добавление отелей завершено.");
   // 3. Добавляем туры, используя сохраненные ID отелей
- // 3. Добавляем туры, используя сохраненные ID отелей
+
   print('Начало добавления туров...');
   for (var i = 0; i < toursData.length; i++) {
  final tourData = toursData[i];
   final tour = {...tourData}; // Создаем копию объекта тура 
     print('Обработка тура: $tour');  // Добавьте логирование для проверки данных тура
+
+
+if (tour['image'] != null && tour['image'] is String) {
+      String imagePath =
+          'D:\\Work\\3k2s\\kusrach5\\Project\\Images\\Tours\\${tour['image']}';
+      print('Загрузка изображения: $imagePath');
+      String imageUrl = await uploadImageToCloudinary(imagePath);
+      if (imageUrl.isNotEmpty) {
+        tour['image'] = imageUrl;
+        print('Изображение успешно загружено: $imageUrl');
+      } else {
+        print('Ошибка загрузки изображения для тура: ${tour['name']}');
+      }
+    }
+
+
     try {
       tour['hotel_id'] = hotelIds[i];// Связываем тур с соответствующим отелем
       await toursRef.add(tour);
@@ -149,6 +191,8 @@ Future<void> prefillData() async {
     }
   }
   print('Добавление туров завершено.');
+
+ 
 }
 
 // Функция для очистки данных из коллекции "tours"
