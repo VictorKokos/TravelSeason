@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:travelzone/database_helper.dart';
 import 'package:travelzone/firebase_options.dart';
 
 // Импортируйте необходимые экраны для каждой вкладки
@@ -15,7 +16,7 @@ Future<void>  main() async {
 
    await prefillData(); 
 
-
+  await DatabaseHelper().database;
   runApp(const MyApp());
 }
 
