@@ -1,6 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:travelzone/screens/profile_screen.dart';
 import '../widgets/mini_tour_item.dart';
 import 'package:travelzone/database_helper.dart'; // Импортируем DatabaseHelper
 
@@ -12,12 +10,12 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
-  late Future<List<Map<String, dynamic>>> _favoriteTours;
+  late Stream<List<Map<String, dynamic>>> _favoriteToursStream;
 
   @override
   void initState() {
     super.initState();
-    _favoriteTours = DatabaseHelper().getAllFavoriteTours();
+    _favoriteToursStream = DatabaseHelper().getFavoriteToursStream();
   }
 
   @override
@@ -26,17 +24,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       appBar: AppBar(
         title: const Text('Избранное'),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _favoriteTours,
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _favoriteToursStream,
         builder: (context, snapshot) {
-          if (snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Ошибка: ${snapshot.error}'));
+          } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+            print('Snapshot Data: ${snapshot.data}');
             final tourDocs = snapshot.data!;
-            if (tourDocs.isEmpty) {
-              return const Center(child: Text('В избранном пусто'));
-            }
             return GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, 
+                crossAxisCount: 2,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
               ),
@@ -44,13 +44,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               itemBuilder: (context, index) {
                 final tourData = tourDocs[index];
                 final tourId = tourData['tourId']; // Используйте 'tourId' 
-                return MiniTourItem(tourId: tourId);
+                return MiniTourItem(tourId: tourId); 
               },
             );
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Ошибка: ${snapshot.error}'));
           } else {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: Text('В избранном пусто'));
           }
         },
       ),

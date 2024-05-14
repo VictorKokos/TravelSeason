@@ -20,6 +20,8 @@ dependencies:
   flutter:
     sdk: flutter
   cloudinary_public: ^0.23.1
+  path_provider: ^2.0.11 
+  http: ^0.13.5
   
 
 dev_dependencies:

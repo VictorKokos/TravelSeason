@@ -1,11 +1,16 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'package:http/http.dart' as http;
+import 'package:travelzone/database_helper.dart';
 
 class TourDetailsScreen extends StatefulWidget {
   final String tourId;
-
   const TourDetailsScreen({Key? key, required this.tourId}) : super(key: key);
-
   @override
   State<TourDetailsScreen> createState() => _TourDetailsScreenState();
 }
@@ -34,8 +39,8 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
         future: tourFuture,
         builder: (context, tourSnapshot) {
           if (tourSnapshot.hasData && tourSnapshot.data!.exists) {
-            final tourData =
-                tourSnapshot.data!.data() as Map<String, dynamic>;
+            final tourData = tourSnapshot.data!.data() as Map<String, dynamic>;
+            final tourId = tourSnapshot.data!.id; // Вот так получаем ID документа
             final hotelId = tourData['hotel_id'];
             hotelFuture = FirebaseFirestore.instance
                 .collection('hotels')
@@ -137,8 +142,16 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
                                   textStyle:
                                       const TextStyle(color: Colors.white),
                                 ),
-                                onPressed: () {
-                                  // TODO: Добавить функционал добавления в закладки
+                                onPressed: () async {
+                                  // Добавляем тур в избранное
+                                  print(tourId);
+                                await DatabaseHelper().addToFavorites(tourId, hotelId, tourData, hotelData, hotelImages);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Добавлено в избранное'),
+                                    ),
+                                  );
                                 },
                                 icon: const Icon(
                                   Icons.bookmark_border,
@@ -213,17 +226,33 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
       ),
     );
   }
+
+  // Функция для скачивания и сохранения изображений отеля
+  Future<void> _downloadAndSaveHotelImages(
+      String hotelId, List<dynamic> imageUrls) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    for (final imageUrl in imageUrls) {
+      final imageName = imageUrl.split('/').last;
+      final imagePath = join(appDir.path, imageName);
+      try {
+        final response = await http.get(Uri.parse(imageUrl));
+        final file = File(imagePath);
+        await file.writeAsBytes(response.bodyBytes);
+        await DatabaseHelper().insertHotelImage(hotelId, imageName);
+      } catch (e) {
+        print('Error downloading image: $e');
+      }
+    }
+  }
 }
 
 // Виджет для индикатора изображений
 class DotsIndicator extends StatelessWidget {
   final int dotsCount;
   final double position;
-
   const DotsIndicator(
       {Key? key, required this.dotsCount, this.position = 0.0})
       : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Row(

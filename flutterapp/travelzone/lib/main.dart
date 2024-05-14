@@ -13,10 +13,11 @@ import 'data.dart';
 Future<void>  main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-   await prefillData(); 
+  
+  // await prefillData(); 
 
   await DatabaseHelper().database;
+
   runApp(const MyApp());
 }
 

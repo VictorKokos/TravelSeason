@@ -1,10 +1,18 @@
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:path/path.dart';
+import 'package:http/http.dart' as http;
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
   static Database? _database;
+
+
+
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -28,8 +36,7 @@ class DatabaseHelper {
     // Таблица для избранных туров
     await db.execute('''
         CREATE TABLE favorites (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          tourId TEXT,
+          tourId TEXT PRIMARY KEY,
           name TEXT,
           imageUrl TEXT,
           description TEXT,
@@ -42,8 +49,7 @@ class DatabaseHelper {
     // Таблица для отелей
     await db.execute('''
         CREATE TABLE hotels (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          hotelId TEXT,
+          hotelId TEXT PRIMARY KEY,
           name TEXT,
           description TEXT,
           starRating INTEGER,
@@ -68,107 +74,161 @@ class DatabaseHelper {
       ''');
   }
 
+  Stream<List<Map<String, dynamic>>> getFavoriteToursStream() {
+    return Stream.periodic(Duration(seconds: 1), (_) async {
+      return await getAllFavoriteTours();
+    }).asyncMap((event) => event);
+  }
+
+
+    Future<void> deleteFavorite(String tourId, String hotelId) async {
+    final db = await database;
+
+    // Удаляем тур из таблицы favorites
+    await db.delete('favorites', where: 'tourId = ?', whereArgs: [tourId]);
+
+    // Удаляем отель, изображения и удобства, если нужно
+    await db.delete('hotels', where: 'hotelId = ?', whereArgs: [hotelId]);
+    await db.delete('hotel_images', where: 'hotelId = ?', whereArgs: [hotelId]);
+    await db.delete('hotel_amenities', where: 'hotelId = ?', whereArgs: [hotelId]);
+  }
   // 1. Метод для получения всех избранных туров
   Future<List<Map<String, dynamic>>> getAllFavoriteTours() async {
     Database db = await database;
     return await db.query('favorites');
   }
 
-  // 2. Метод для получения информации об отеле, его изображений и удобств
-  Future<Map<String, dynamic>> getHotelDetails(String hotelId) async {
+  // 2. Метод для вставки избранного тура
+  Future<void> insertFavoriteTour(Map<String, dynamic> tourData) async {
     Database db = await database;
-    // Получаем информацию об отеле
-    List<Map<String, dynamic>> hotelData = await db.query(
-      'hotels',
-      where: 'hotelId = ?',
-      whereArgs: [hotelId],
-    );
-    // Получаем изображения отеля
-    List<Map<String, dynamic>> hotelImages = await db.query(
-      'hotel_images',
-      where: 'hotelId = ?',
-      whereArgs: [hotelId],
-    );
-    // Получаем удобства отеля
-    List<Map<String, dynamic>> hotelAmenities = await db.query(
-      'hotel_amenities',
-      where: 'hotelId = ?',
-      whereArgs: [hotelId],
-    );
-    // Формируем результат
-    Map<String, dynamic> result = {
-      'hotel': hotelData.isNotEmpty ? hotelData[0] : null,
-      'images': hotelImages,
-      'amenities': hotelAmenities,
-    };
-    return result;
+    await db.insert('favorites', {
+      'tourId': tourData['id'],
+      'name': tourData['name'],
+      'imageUrl': tourData['image'],
+      'description': tourData['description'],
+      'price': tourData['price'],
+     'startDate': tourData['start_date'],
+      'endDate': tourData['end_date'],
+      'hotelId': tourData['hotel_id'],
+    });
   }
 
-  // 3. Метод для удаления тура из избранного и соответствующего отеля
-  Future<void> deleteFavoriteTourAndHotel(String tourId) async {
+  // 3. Метод для вставки отеля
+  Future<void> insertHotel(Map<String, dynamic> hotelData) async {
     Database db = await database;
-    // Получаем id отеля из таблицы избранных туров
-    List<Map<String, dynamic>> tourData = await db.query(
-      'favorites',
-      where: 'tourId = ?',
-      whereArgs: [tourId],
-    );
-    String? hotelId = tourData.isNotEmpty ? tourData[0]['hotelId'] : null;
-    // Удаляем тур из избранного
-    await db.delete(
-      'favorites',
-      where: 'tourId = ?',
-      whereArgs: [tourId],
-    );
-    // Если найден id отеля, удаляем отель, его изображения и удобства
-    if (hotelId != null) {
-      await db.delete(
-        'hotels',
-        where: 'hotelId = ?',
-        whereArgs: [hotelId],
-      );
-      await db.delete(
-        'hotel_images',
-        where: 'hotelId = ?',
-        whereArgs: [hotelId],
-      );
-      await db.delete(
-        'hotel_amenities',
-        where: 'hotelId = ?',
-        whereArgs: [hotelId],
-      );
+    await db.insert('hotels', {
+      'hotelId': hotelData['id'],
+      'name': hotelData['name'],
+      'description': hotelData['description'],
+      'starRating': hotelData['star_rating'],
+      'location': hotelData['location'],
+    });
+  }
+
+  // 4. Метод для вставки изображения отеля
+  Future<void> insertHotelImage(String hotelId, String imageUrl) async {
+    Database db = await database;
+    await db.insert('hotel_images', {
+      'hotelId': hotelId,
+      'imageUrl': imageUrl,
+    });
+  }
+
+  // 5. Метод для вставки удобств отеля
+  Future<void> insertHotelAmenities(
+      String hotelId, List<dynamic> amenities) async {
+    Database db = await database;
+    for (final amenity in amenities) {
+      await db.insert('hotel_amenities', {
+        'hotelId': hotelId,
+        'amenityName': amenity,
+      });
     }
   }
+ Future<void> addToFavorites(
+    String tourId, // ID документа тура
+    String hotelId, // ID документа отеля
+    Map<String, dynamic> tourData,
+    Map<String, dynamic> hotelData,
+    List<dynamic> hotelImages,) async {
+  Database db = await database;
 
-  // 4. Метод для добавления тура и отеля в избранное
-  Future<void> addFavoriteTourAndHotel(
-      String tourId, String hotelId) async {
-    Database db = await database;
-    // Добавляем тур в избранное
-    await db.insert('favorites', {
-      'tourId': tourId,
-      'hotelId': hotelId,
-      // ... другие поля тура, которые будут получены позже из Firestore
+  // 1. Сохраняем тур в таблицу favorites
+  await db.insert('favorites', {
+    'tourId': tourId, // Используем переданный tourId
+    'name': tourData['name'],
+    'imageUrl': tourData['imageUrl'],
+    'description': tourData['description'],
+    'price': tourData['price'],
+    'startDate': tourData['startDate'],
+    'endDate': tourData['endDate'],
+    'hotelId': hotelId, // Используем переданный hotelId
+  });
+
+  // 2. Сохраняем отель в таблицу hotels
+  await db.insert('hotels', {
+    'hotelId': hotelId,
+    'name': hotelData['name'],
+    'description': hotelData['description'],
+    'starRating': hotelData['starRating'],
+    'location': hotelData['location'],
+  });
+
+  // 3. Сохраняем изображения отеля в таблицу hotel_images
+  for (var imageUrl in hotelImages) {
+    await db.insert('hotel_images', {
+      'hotelId': hotelData['hotelId'],
+      'imageUrl': imageUrl,
     });
-    // Добавляем отель в таблицу hotels
-    await db.insert('hotels', {
-      'hotelId': hotelId,
-      // ... другие поля отеля, которые будут получены позже из Firestore
+    // Скачиваем и сохраняем изображение локально
+    await _downloadAndSaveImage(imageUrl, hotelId);
+  }
+
+  // 4. Сохраняем удобства отеля в таблицу hotel_amenities
+  for (var amenity in hotelData['amenities']) {
+    await db.insert('hotel_amenities', {
+      'hotelId': hotelData['hotelId'],
+      'amenityName': amenity,
     });
-    // Добавляем изображения и удобства отеля (информация будет получена позже)
-    // ...
   }
 
-  // Метод для обновления информации о туре в избранном
-  Future<void> update(String table, Map<String, dynamic> values,
-      {String? where, List<dynamic>? whereArgs}) async {
-    Database db = await database;
-    await db.update(table, values, where: where, whereArgs: whereArgs);
+  // 5. Проверяем, есть ли что-то в избранном
+  int? count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM favorites'));
+  
+  if (count! > 0) {
+    // Избранное не пустое, можно выполнить какие-то действия
+    print('В избранном есть элементы');
+  } else {
+    // Избранное пустое, можно выполнить какие-то другие действия
+    print('Избранное пустое');
+  }
+}
+
+  // Метод для скачивания и сохранения изображений
+  Future<void> _downloadAndSaveImage(String imageUrl, String hotelId) async {
+    final response = await http.get(Uri.parse(imageUrl));
+    final documentDirectory = await getApplicationDocumentsDirectory();
+    final imageName = imageUrl.split('/').last;
+    final filePath = '${documentDirectory.path}/$hotelId/$imageName';
+
+    // Создаем папку для отеля, если она не существует
+    final hotelDirectory = Directory('${documentDirectory.path}/$hotelId');
+    if (!await hotelDirectory.exists()) {
+      await hotelDirectory.create();
+    }
+
+    final file = File(filePath);
+    await file.writeAsBytes(response.bodyBytes);
   }
 
-  // Метод для вставки данных в таблицу
-  Future<void> insert(String table, Map<String, dynamic> values) async {
-    Database db = await database;
-    await db.insert(table, values);
-  }
+  Future<void> clearAllTables() async {
+  final db = await DatabaseHelper().database;
+
+  await db.delete('favorites');
+  await db.delete('hotels');
+  await db.delete('hotel_images');
+  await db.delete('hotel_amenities');
+
+  print('Все таблицы очищены!');
+}
 }

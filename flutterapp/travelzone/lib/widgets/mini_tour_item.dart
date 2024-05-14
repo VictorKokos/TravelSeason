@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:travelzone/database_helper.dart'; // Добавлен импорт
 import 'package:travelzone/screens/tour_details_screen.dart';
 
 class MiniTourItem extends StatelessWidget {
@@ -13,10 +14,10 @@ class MiniTourItem extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.hasData && snapshot.data!.exists) {
           final tourData = snapshot.data!.data() as Map<String, dynamic>;
-
           final imageUrl = tourData['image'];
           final title = tourData['name'];
           final price = tourData['price'];
+          final hotelId = tourData['hotel_id']; // Получаем hotelId
 
           return SizedBox(
             width: 150, // Сделаем виджет квадратным
@@ -45,6 +46,21 @@ class MiniTourItem extends StatelessWidget {
                       const SizedBox(
                           height: 150,
                           child: Center(child: Text('Нет изображения'))),
+                    Align(
+                      alignment: Alignment.topRight, // Разместим значок в правом верхнем углу
+                      child: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () async {
+                          // Вызываем метод для удаления закладки
+                          await DatabaseHelper().deleteFavorite(tourId, hotelId);
+
+                          // Можно добавить сообщение об успешном удалении
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Закладка удалена')),
+                          );
+                        },
+                      ),
+                    ),
                     Align(
                       alignment: Alignment.bottomCenter,
                       child: Container(
