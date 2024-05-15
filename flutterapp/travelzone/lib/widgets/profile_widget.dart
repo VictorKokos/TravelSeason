@@ -30,7 +30,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   @override
   void initState() {
     super.initState();
-    _firstNameController.text = widget.user.displayName?.split(' ')[0] ?? '';
+   _firstNameController.text = widget.user.displayName?.split(' ')[0] ?? '';
     _lastNameController.text = widget.user.displayName?.split(' ')[1] ?? '';
 
     // Добавляем слушателей для автоматического обновления профиля

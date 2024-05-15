@@ -145,13 +145,14 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
                                 onPressed: () async {
                                   // Добавляем тур в избранное
                                   print(tourId);
-                                await DatabaseHelper().addToFavorites(tourId, hotelId, tourData, hotelData, hotelImages);
+                                  // Сразу показываем SnackBar
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content:
                                           Text('Добавлено в избранное'),
                                     ),
                                   );
+                                  await DatabaseHelper().addToFavorites(tourId, hotelId, tourData, hotelData, hotelImages);
                                 },
                                 icon: const Icon(
                                   Icons.bookmark_border,
