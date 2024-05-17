@@ -8,6 +8,15 @@ class DbService {
     return _firestore.collection(collectionName).add(data);
   }
 
+    Future<void> addTour(Map<String, dynamic> tourData) async {
+    try {
+      await _firestore.collection('tours').add(tourData);
+    } catch (e) {
+      print('Error adding tour: $e');
+      // Handle the error appropriately, e.g., show an error message to the user.
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getTours() async {
     // Получаем ссылку на коллекцию "tours"
     final CollectionReference toursCollection = _firestore.collection('tours');
