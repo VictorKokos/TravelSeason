@@ -15,59 +15,58 @@ class _SearchScreenState extends State<SearchScreen> {
   final DbService _dbService = DbService();
   RangeValues _priceRange = const RangeValues(0, 10000);
   String _countrySearch = "";
-  List<String> _suggestedCountries = []; // Список предлагаемых стран
-  List<Map<String, dynamic>> _filteredTours = [];
+  List<String> _suggestedCountries = [];
+  Stream<QuerySnapshot>? _filteredToursStream;
   Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
-    _loadTours();
+    _filteredToursStream = FirebaseFirestore.instance.collection('tours').snapshots();
   }
 
-  Future<void> _loadTours() async {
-    final tours = await _dbService.getTours();
+  void _filterTours() {
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection('tours');
+
+    // Фильтруем по стране, если введена
+    if (_countrySearch.isNotEmpty) {
+      query = query.where('country', isEqualTo: _countrySearch);
+    }
+
+    // Фильтруем по цене
+    query = query
+        .where('price', isGreaterThanOrEqualTo: _priceRange.start)
+        .where('price', isLessThanOrEqualTo: _priceRange.end);
+
     setState(() {
-      _filteredTours = tours;
+      _filteredToursStream = query.snapshots();
     });
   }
 
-  void _filterTours() async {
+  Future<void> _searchCountries(String query) async {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () async {
-      final tours = await _dbService.getTours();
+      final countries = await _dbService.getCountries();
+      final suggestedCountries = countries
+          .where((country) =>
+              (country['name'] as String)
+                  .toLowerCase()
+                  .contains(query.toLowerCase()))
+          .map((country) => country['name'] as String)
+          .toList();
       setState(() {
-        _filteredTours = tours.where((tour) {
-          // Проверяем соответствие цене
-          final priceMatch =
-              tour['price'] >= _priceRange.start && tour['price'] <= _priceRange.end;
-
-          // Проверяем соответствие стране (если поиск по стране активен)
-          final countryMatch = _countrySearch.isEmpty ||
-              tour['country'].toLowerCase().contains(_countrySearch.toLowerCase());
-
-          return priceMatch && countryMatch;
-        }).toList();
+        _suggestedCountries = suggestedCountries;
       });
     });
   }
 
-  // Функция для поиска стран по введенному тексту
-  Future<void> _searchCountries(String query) async {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
-      // Получение списка стран из базы данных
-      final countries = await _dbService.getCountries(); // Предполагается, что DbService имеет метод getCountries()
-
-      // Фильтрация стран по запросу
-      final suggestedCountries = countries
-      .where((country) => 
-          (country['name'] as String).toLowerCase().contains(query.toLowerCase())
-      )
-      .toList();
-  setState(() {
-      _suggestedCountries = suggestedCountries.cast<String>();
-  });
+  // Функция для сброса фильтров
+  void _resetFilters() {
+    setState(() {
+      _countrySearch = "";
+      _priceRange = const RangeValues(0, 10000);
+      _suggestedCountries = [];
+      _filteredToursStream = FirebaseFirestore.instance.collection('tours').snapshots();
     });
   }
 
@@ -157,14 +156,42 @@ class _SearchScreenState extends State<SearchScreen> {
                       _filterTours();
                     },
                   ),
+
+                  // Кнопка сброса фильтров
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _resetFilters,
+                    child: const Text('Сбросить фильтры'),
+                  ),
                   const SizedBox(height: 16),
                 ],
               ),
             ),
 
             // Отображение результатов поиска
-            if (_filteredTours.isNotEmpty)
-              ..._filteredTours.map((tour) => TourItem(tourId: tour['id']))
+            if (_filteredToursStream != null)
+              StreamBuilder<QuerySnapshot>(
+                stream: _filteredToursStream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Ошибка: ${snapshot.error}'));
+                  }
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final tours = snapshot.data!.docs;
+                  return ListView.builder(
+                    itemCount: tours.length,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      final tour = tours[index].data() as Map<String, dynamic>;
+                      return TourItem(tourId: tours[index].id);
+                    },
+                  );
+                },
+              )
             else
               const Center(child: Text('Туров не найдено')),
           ],
@@ -175,7 +202,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
-    _debounce?.cancel(); // Отмена таймера при уничтожении виджета
+    _debounce?.cancel();
     super.dispose();
   }
 }

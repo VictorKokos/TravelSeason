@@ -1,10 +1,15 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.travelzone">
+
+    <!-- Разрешения должны быть здесь -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
     <application
         android:label="travelzone"
-       
-         android:name="androidx.multidex.MultiDexApplication"
-        android:icon="@mipmap/ic_launcher">
-       
+        android:icon="@mipmap/ic_launcher"
+        android:name="androidx.multidex.MultiDexApplication">
         <activity
             android:name=".MainActivity"
             android:exported="true"

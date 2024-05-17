@@ -4,7 +4,7 @@ class DbService {
   final _firestore = FirebaseFirestore.instance;
 
   // Добавление данных в коллекции
-  Future<void> addData(String collectionName, Map<String, dynamic> data) {
+  Future addData(String collectionName, Map<String, dynamic> data) {
     return _firestore.collection(collectionName).add(data);
   }
 
@@ -25,7 +25,8 @@ class DbService {
   }
 
   Future<List<Map<String, dynamic>>> getCountries() async {
-    final CollectionReference countriesCollection = _firestore.collection('countries');
+    final CollectionReference countriesCollection =
+        _firestore.collection('countries');
     final QuerySnapshot snapshot = await countriesCollection.get();
     final List<Map<String, dynamic>> countriesList = snapshot.docs.map((doc) {
       return {
@@ -34,5 +35,32 @@ class DbService {
       };
     }).toList();
     return countriesList;
+  }
+
+  // Удаление тура и связанного с ним отеля
+  Future deleteTour(String tourId) async {
+    try {
+      // Получаем данные тура по ID
+      final DocumentSnapshot tourDoc =
+          await _firestore.collection('tours').doc(tourId).get();
+      if (tourDoc.exists) {
+        // Извлекаем ID отеля из данных тура
+        final String hotelId = tourDoc.get('hotel_id');
+
+        // Удаляем тур
+        await _firestore.collection('tours').doc(tourId).delete();
+        print('Тур с ID: $tourId успешно удален.');
+
+        // Удаляем отель, если он связан с этим туром
+        if (hotelId != null) {
+          await _firestore.collection('hotels').doc(hotelId).delete();
+          print('Отель с ID: $hotelId успешно удален.');
+        }
+      } else {
+        print('Тур с ID: $tourId не найден.');
+      }
+    } catch (e) {
+      print('Ошибка при удалении тура: $e');
+    }
   }
 }

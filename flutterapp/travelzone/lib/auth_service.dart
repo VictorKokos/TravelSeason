@@ -114,4 +114,21 @@ class AuthService {
       await user.updatePhotoURL(photoURL);
     }
   }
+Future<bool> isCurrentUserAdmin() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return false; // Пользователь не авторизован (включая гостя)
+    }
+
+    final docSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (docSnapshot.exists) {
+      return docSnapshot.data()!['isAdmin'] as bool; // Проверяем поле isAdmin
+    } else {
+      return false; // Документ пользователя не найден (гость или ошибка)
+    }
+  }
 }

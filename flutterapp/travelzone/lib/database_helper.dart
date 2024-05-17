@@ -91,7 +91,30 @@ class DatabaseHelper {
   // 1. Метод для получения всех избранных туров
   Future<List<Map<String, dynamic>>> getAllFavoriteTours() async {
     Database db = await database;
-    return await db.query('favorites');
+    final tours = await db.query('favorites');
+
+    // Получаем список всех изображений отелей
+    final hotelImages = await db.query('hotel_images');
+
+    // Соединяем данные о турах и изображениях
+    final combinedData = tours.map((tour) {
+      final hotelId = tour['hotelId'];
+      final hotelImagesForTour = hotelImages
+          .where((image) => image['hotelId'] == hotelId)
+          .toList();
+
+      // Собираем полный путь к изображению
+      final imagePath = hotelImagesForTour.isNotEmpty
+          ? hotelImagesForTour.first['imageUrl']
+          : ''; 
+
+      return {
+        ...tour,
+        'imageUrl': imagePath, // Сохраняем полный путь в структуру данных тура
+      };
+    }).toList();
+
+    return combinedData;
   }
 
   // 4. Метод для вставки изображения отеля
@@ -122,6 +145,7 @@ class DatabaseHelper {
       Map<String, dynamic> hotelData,
       List<dynamic> hotelImages) async {
     Database db = await database;
+
 
     // Проверка, есть ли уже этот тур в избранном
     final existingTour = await db.query('favorites',
@@ -154,12 +178,12 @@ class DatabaseHelper {
 
         // 3. Сохраняем изображения отеля в таблицу hotel_images
         for (var imageUrl in hotelImages) {
+          // Скачиваем и сохраняем изображение локально
+          final imagePath = await _downloadAndSaveImage(imageUrl, hotelId);
           await db.insert('hotel_images', {
             'hotelId': hotelData['hotelId'],
-            'imageUrl': imageUrl,
+            'imageUrl': imagePath,
           });
-          // Скачиваем и сохраняем изображение локально
-          await _downloadAndSaveImage(imageUrl, hotelId);
         }
 
         // 4. Сохраняем удобства отеля в таблицу hotel_amenities
@@ -188,7 +212,7 @@ class DatabaseHelper {
   }
 
   // Метод для скачивания и сохранения изображений
-  Future<void> _downloadAndSaveImage(String imageUrl, String hotelId) async {
+  Future<String> _downloadAndSaveImage(String imageUrl, String hotelId) async {
     final response = await http.get(Uri.parse(imageUrl));
     final documentDirectory = await getApplicationDocumentsDirectory();
     final imageName = imageUrl.split('/').last;
@@ -199,9 +223,11 @@ class DatabaseHelper {
     if (!await hotelDirectory.exists()) {
       await hotelDirectory.create();
     }
-
+print('Image downloaded: $filePath');
     final file = File(filePath);
     await file.writeAsBytes(response.bodyBytes);
+
+    return filePath; // Возвращаем локальный путь к изображению
   }
 
   Future<void> clearAllTables() async {

@@ -1,107 +1,102 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:travelzone/database_helper.dart'; // Добавлен импорт
+import 'package:travelzone/database_helper.dart';
 import 'package:travelzone/screens/tour_details_screen.dart';
 
-class MiniTourItem extends StatelessWidget {
-  final String tourId; // ID тура из Firestore
+class MiniTourItem extends StatefulWidget {
+  final String tourId;
   const MiniTourItem({Key? key, required this.tourId}) : super(key: key);
 
   @override
+  State<MiniTourItem> createState() => _MiniTourItemState();
+}
+
+class _MiniTourItemState extends State<MiniTourItem> {
+  Map<String, dynamic>? _tourData; // Храним данные о туре
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTourData();
+  }
+
+  // Метод для получения данных о туре из SQLite
+  Future _fetchTourData() async {
+    final db = await DatabaseHelper().database;
+    final tourData = await db.query('favorites', where: 'tourId = ?', whereArgs: [widget.tourId]);
+    if (tourData.isNotEmpty) {
+      setState(() {
+        _tourData = Map.from(tourData.first); // Создаем копию Map
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('tours').doc(tourId).snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && snapshot.data!.exists) {
-          final tourData = snapshot.data!.data() as Map<String, dynamic>;
-          final imageUrl = tourData['image'];
-          final title = tourData['name'];
-          final price = tourData['price'];
-          final hotelId = tourData['hotel_id']; // Получаем hotelId
+    // Проверяем, есть ли данные о туре
+    if (_tourData != null) {
+      final title = _tourData!['name'];
+      final price = _tourData!['price'];
+      final hotelId = _tourData!['hotelId'];
 
-          return SizedBox(
-            width: 150, // Сделаем виджет квадратным
-            height: 150,
-            child: Card(
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TourDetailsScreen(tourId: tourId),
-                    ),
-                  );
-                },
-                child: Stack(
-                  children: [
-                    if (imageUrl != null && imageUrl.isNotEmpty)
-                      Image.network(
-                        imageUrl,
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                      )
-                    else
-                      const SizedBox(
-                          height: 150,
-                          child: Center(child: Text('Нет изображения'))),
-                    Align(
-                      alignment: Alignment.topRight, // Разместим значок в правом верхнем углу
-                      child: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () async {
-                          // Вызываем метод для удаления закладки
-                          await DatabaseHelper().deleteFavorite(tourId, hotelId);
-
-                          // Можно добавить сообщение об успешном удалении
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Закладка удалена')),
-                          );
-                        },
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Container(
-                        color: Colors.black54,
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min, // Уменьшаем размер колонки
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 14, // Уменьшаем размер текста
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '\$$price',
-                              style: const TextStyle(
-                                fontSize: 12, // Уменьшаем размер текста
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                          ],
+      return SizedBox(
+        width: double.infinity, // Занимаем всю доступную ширину
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          margin: const EdgeInsets.symmetric(horizontal: 16), // Добавляем отступы по бокам
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TourDetailsScreen(tourId: widget.tourId),
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16.0), // Добавляем внутренние отступы
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '\$$price',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () async {
+                      await DatabaseHelper().deleteFavorite(widget.tourId, hotelId);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Закладка удалена')),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-          );
-        } else if (snapshot.hasError) {
-          return Text('Ошибка: ${snapshot.error}');
-        } else {
-          return const CircularProgressIndicator();
-        }
-      },
-    );
+          ),
+        ),
+      );
+    } else {
+      return const Center(child: CircularProgressIndicator());
+    }
   }
 }

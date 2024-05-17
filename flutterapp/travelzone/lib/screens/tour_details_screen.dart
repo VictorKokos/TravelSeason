@@ -152,7 +152,18 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
                                           Text('Добавлено в избранное'),
                                     ),
                                   );
-                                  await DatabaseHelper().addToFavorites(tourId, hotelId, tourData, hotelData, hotelImages);
+
+                                  // Скачиваем изображения и сохраняем в БД
+                                  await _downloadAndSaveHotelImages(
+                                      hotelId, hotelImages);
+
+                                  await DatabaseHelper()
+                                      .addToFavorites(
+                                          tourId,
+                                          hotelId,
+                                          tourData,
+                                          hotelData,
+                                          hotelImages);
                                 },
                                 icon: const Icon(
                                   Icons.bookmark_border,
@@ -239,7 +250,8 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
         final response = await http.get(Uri.parse(imageUrl));
         final file = File(imagePath);
         await file.writeAsBytes(response.bodyBytes);
-        await DatabaseHelper().insertHotelImage(hotelId, imageName);
+        // Сохраняем локальный путь к изображению в БД
+        await DatabaseHelper().insertHotelImage(hotelId, imagePath);
       } catch (e) {
         print('Error downloading image: $e');
       }

@@ -17,7 +17,7 @@ Future<void>  main() async {
    await prefillData(); 
 
   await DatabaseHelper().database;
-
+  //DatabaseHelper().clearAllTables();
   runApp(const MyApp());
 }
 

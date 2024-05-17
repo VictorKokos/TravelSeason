@@ -11,12 +11,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<Map<String, dynamic>>> toursFuture;
+  late Stream<QuerySnapshot> toursStream;
 
   @override
   void initState() {
     super.initState();
-    toursFuture = DbService().getTours(); // Получаем данные из Firestore
+    toursStream = FirebaseFirestore.instance.collection('tours').snapshots();
   }
 
   @override
@@ -25,24 +25,24 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Туры'),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: toursFuture,
+      body: StreamBuilder<QuerySnapshot>(
+        stream: toursStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Ошибка: ${snapshot.error}'));
           }
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final tours = snapshot.data!;
+
+          final tours = snapshot.data!.docs;
           return ListView.builder(
             itemCount: tours.length,
             reverse: true, // Листаем снизу вверх
             itemBuilder: (context, index) {
-              final tour = tours[index];
+              final tour = tours[index].data() as Map<String, dynamic>; // Получаем данные из документа
               return TourItem(
-                tourId: tour['id'],
-                
+                tourId: tours[index].id,
               );
             },
           );

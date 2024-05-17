@@ -34,17 +34,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
             print('Snapshot Data: ${snapshot.data}');
             final tourDocs = snapshot.data!;
-            return GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
+            return ListView.builder(
               itemCount: tourDocs.length,
               itemBuilder: (context, index) {
                 final tourData = tourDocs[index];
                 final tourId = tourData['tourId']; // Используйте 'tourId' 
-                return MiniTourItem(tourId: tourId); 
+                return SizedBox(
+                  height: 150, // Установите высоту мини-тура
+                  child: MiniTourItem(tourId: tourId),
+                );
               },
             );
           } else {
