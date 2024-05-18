@@ -14,7 +14,7 @@ Future<void>  main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
-   await prefillData(); 
+ //  await prefillData(); 
 
   await DatabaseHelper().database;
   //DatabaseHelper().clearAllTables();
