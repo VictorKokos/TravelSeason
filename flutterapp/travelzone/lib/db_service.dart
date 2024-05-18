@@ -8,7 +8,7 @@ class DbService {
     return _firestore.collection(collectionName).add(data);
   }
 
-    Future<void> addTour(Map<String, dynamic> tourData) async {
+  Future<void> addTour(Map<String, dynamic> tourData) async {
     try {
       await _firestore.collection('tours').add(tourData);
     } catch (e) {
@@ -70,6 +70,56 @@ class DbService {
       }
     } catch (e) {
       print('Ошибка при удалении тура: $e');
+    }
+  }
+
+  // Получение данных тура по ID
+  Future<Map<String, dynamic>?> getTourById(String tourId) async {
+    try {
+      final DocumentSnapshot tourDoc =
+          await _firestore.collection('tours').doc(tourId).get();
+      if (tourDoc.exists) {
+        return tourDoc.data() as Map<String, dynamic>;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка при получении тура: $e');
+      return null;
+    }
+  }
+
+  // Получение данных отеля по ID
+  Future<Map<String, dynamic>?> getHotelById(String hotelId) async {
+    try {
+      final DocumentSnapshot hotelDoc =
+          await _firestore.collection('hotels').doc(hotelId).get();
+      if (hotelDoc.exists) {
+        return hotelDoc.data() as Map<String, dynamic>;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка при получении отеля: $e');
+      return null;
+    }
+  }
+
+  // Обновление данных тура
+  Future<void> updateTour(String tourId, Map<String, dynamic> tourData) async {
+    try {
+      await _firestore.collection('tours').doc(tourId).update(tourData);
+    } catch (e) {
+      print('Ошибка при обновлении тура: $e');
+    }
+  }
+
+  // Обновление данных отеля
+  Future<void> updateHotel(String hotelId, Map<String, dynamic> hotelData) async {
+    try {
+      await _firestore.collection('hotels').doc(hotelId).update(hotelData);
+    } catch (e) {
+      print('Ошибка при обновлении отеля: $e');
     }
   }
 }
