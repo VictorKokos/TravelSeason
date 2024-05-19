@@ -38,7 +38,9 @@ class _TourItemState extends State<TourItem> {
     }
   }
 
+
   // Функция для получения данных о туре
+  
   void _fetchTourData() async {
     final dbService = DbService();
     tourData = await dbService.getTourById(widget.tourId);
@@ -82,11 +84,13 @@ class _TourItemState extends State<TourItem> {
   }
 
   // Функция для удаления тура
-  void _deleteTour() async {
-    final dbService = DbService();
-    await dbService.deleteTour(widget.tourId); // Вызываем функцию удаления
-    // После удаления можно перейти на предыдущий экран или обновить список туров
-  }
+ void _deleteTour() async {
+  final dbService = DbService();
+  await dbService.deleteTour(widget.tourId);
+  
+ 
+  // После удаления можно перейти на предыдущий экран или обновить список туров
+}
 
   // Функция для перехода на экран редактирования
   void _editTour() {

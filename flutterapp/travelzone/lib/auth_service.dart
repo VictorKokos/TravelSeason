@@ -33,7 +33,28 @@ class AuthService {
       rethrow;
     }
   }
+Future<bool> isCurrentUserSuperAdmin() async {
+  final user = _auth.currentUser;
+  if (user == null) {
+    return false; 
+  }
 
+  final docSnapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(user.uid)
+      .get();
+
+  if (docSnapshot.exists) {
+    final isSuperAdmin = docSnapshot.data()!['isSuperAdmin'];
+    if (isSuperAdmin != null) {
+      return isSuperAdmin as bool; // Приводим к типу bool только если isSuperAdmin не null
+    } else {
+      return false; // Возвращаем false, если isSuperAdmin равно null
+    }
+  } else {
+    return false; 
+  }
+}
   Future<User?> registerWithEmailAndPassword(String email, String password) async {
     try {
       final UserCredential result = await _auth.createUserWithEmailAndPassword(

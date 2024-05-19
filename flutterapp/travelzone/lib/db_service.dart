@@ -122,4 +122,13 @@ class DbService {
       print('Ошибка при обновлении отеля: $e');
     }
   }
+
+    Future<void> updateAdminStatus(String userId, bool isAdmin) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({'isAdmin': isAdmin});
+    } catch (e) {
+      print('Ошибка при обновлении статуса администратора: $e');
+      // Обработайте ошибку, например, покажите сообщение пользователю.
+    }
+  }
 }

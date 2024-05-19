@@ -16,6 +16,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late Stream<QuerySnapshot<Map<String, dynamic>>> toursStream;
   bool isAdmin = false; // Переменная для хранения статуса администратора
+  bool isSuperAdmin = false; // Переменная для хранения статуса супер-администратора
+  String? _userIdToManage; // ID пользователя для управления правами
 
   @override
   void initState() {
@@ -24,11 +26,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkAdminStatus(); // Проверяем статус администратора при инициализации
   }
 
-  // Функция для проверки статуса администратора
+  // Функция для проверки статуса администратора и супер-администратора
   void _checkAdminStatus() async {
     final authService = AuthService();
     isAdmin = await authService.isCurrentUserAdmin();
-    if (mounted) { // Проверка, в дереве ли виджет
+    isSuperAdmin = await authService.isCurrentUserSuperAdmin();
+    if (mounted) {
       setState(() {});
     }
   }
@@ -39,13 +42,16 @@ class _HomeScreenState extends State<HomeScreen> {
       if (user != null) {
         _checkAdminStatus(); // Check admin status after authentication
       } else {
-        isAdmin = false; // Set isAdmin to false if the user logs out
-        if (mounted) { // Check if the widget is still mounted
-          setState(() {}); // Update state if mounted
+        isAdmin = false;
+        isSuperAdmin = false;
+        _userIdToManage = null; // Сбрасываем ID пользователя для управления
+        if (mounted) {
+          setState(() {});
         }
       }
     });
   }
+
 
   @override
   void didChangeDependencies() {
@@ -61,6 +67,21 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // Функция для обновления прав доступа пользователя
+  void _updateAdminStatus(bool newAdminStatus) async {
+    final dbService = DbService();
+    try {
+      await dbService.updateAdminStatus(_userIdToManage!, newAdminStatus);
+      _userIdToManage = null; // Сбрасываем ID пользователя для управления
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      print('Ошибка при обновлении статуса администратора: $e');
+      // Handle the error, e.g., show an error message to the user.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,6 +90,49 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
+          // Если пользователь - супер-администратор, показываем поле для ввода ID пользователя
+            if (isSuperAdmin)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Поле для ввода ID пользователя
+                  TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Введите ID пользователя',
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _userIdToManage = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16.0),
+                  // Кнопки отдать/забрать права
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _userIdToManage != null
+                              ? () => _updateAdminStatus(true)
+                              : null,
+                          child: const Text('Отдать права'),
+                        ),
+                      ),
+                      const SizedBox(width: 16.0),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _userIdToManage != null
+                              ? () => _updateAdminStatus(false)
+                              : null,
+                          child: const Text('Забрать права'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           // Кнопка "Добавить тур", если пользователь - администратор
           if (isAdmin)
             Padding(
@@ -87,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           // StreamBuilder для отображения списка туров
-          Expanded(
+      Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: toursStream,
               builder: (context, snapshot) {
@@ -101,14 +165,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 final tours = snapshot.data!.docs;
                 return ListView.builder(
                   itemCount: tours.length,
-                  reverse: true, // Листаем снизу вверх
+                  reverse: true,
                   itemBuilder: (context, index) {
-                    final tour = tours[index].data() as Map<String, dynamic>; // Получаем данные из документа
+                    final tour = tours[index].data() as Map<String, dynamic>;
                     return TourItem(
-                      tourId: tours[index].id,
-                    );
-                  },
-                );
+                      tourId: tours[index].id, //  Используем ID тура из документа
+                      key: Key(tours[index].id), // Ключ для каждого элемента
+    );
+  },
+);
               },
             ),
           ),
@@ -117,3 +182,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
