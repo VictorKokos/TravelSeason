@@ -1,12 +1,15 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:http/http.dart' as http;
 import 'package:travelzone/database_helper.dart';
+import 'package:travelzone/screens/tour_booking_screen.dart';
+import 'package:travelzone/screens/profile_screen.dart'; // Импортируем экран авторизации
 
 class TourDetailsScreen extends StatefulWidget {
   final String tourId;
@@ -40,7 +43,7 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
         builder: (context, tourSnapshot) {
           if (tourSnapshot.hasData && tourSnapshot.data!.exists) {
             final tourData = tourSnapshot.data!.data() as Map<String, dynamic>;
-            final tourId = tourSnapshot.data!.id; // Вот так получаем ID документа
+            final tourId = tourSnapshot.data!.id;
             final hotelId = tourData['hotel_id'];
             hotelFuture = FirebaseFirestore.instance
                 .collection('hotels')
@@ -184,35 +187,33 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
                                       const TextStyle(color: Colors.white),
                                 ),
                                 onPressed: () {
-                                  // TODO: Добавить функционал выбора рейса
+                                  // Проверяем, авторизован ли пользователь
+                                  final user = FirebaseAuth.instance.currentUser;
+                                  if (user != null) {
+                                    // Переход на страницу бронирования
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            TourBookingScreen(tourId: tourId),
+                                      ),
+                                    );
+                                  } else {
+                                    // Показываем уведомление
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            'Для бронирования тура необходимо авторизоваться'),
+                                      ),
+                                    );
+                                  }
                                 },
                                 icon: const Icon(
                                   Icons.flight_takeoff,
                                   color: Colors.white,
                                 ),
                                 label: const Text(
-                                  'Select flight',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange,
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 16.0),
-                                  textStyle:
-                                      const TextStyle(color: Colors.white),
-                                ),
-                                onPressed: () {
-                                  // TODO: Переход на вкладку с отзывами
-                                },
-                                icon: const Icon(
-                                  Icons.reviews,
-                                  color: Colors.white,
-                                ),
-                                label: const Text(
-                                  'Reviews',
+                                  'Book Tour',
                                   style: TextStyle(color: Colors.white),
                                 ),
                               ),
