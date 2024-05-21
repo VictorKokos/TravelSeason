@@ -47,7 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         future: _authService.getCurrentUser(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return CircularProgressIndicator(); // Индикатор загрузки
+            return const CircularProgressIndicator(); // Индикатор загрузки
           } else if (snapshot.hasError) {
             return Text('Ошибка: ${snapshot.error}');
           } else if (snapshot.hasData && snapshot.data != null) {
@@ -71,12 +71,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Заголовок формы
                     Text(
                       _showSignInForm ? 'Вход' : 'Регистрация',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 32), // Добавляем отступ
+                    const SizedBox(height: 32), // Добавляем отступ
                     // Поля ввода
                     TextFormField(
                       controller: _emailController,
@@ -105,13 +105,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return null;
                       },
                     ),
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
                     // Кнопка отправки формы
                     ElevatedButton(
                       onPressed: _submitForm,
                       child: Text(_showSignInForm ? 'Войти' : 'Зарегистрироваться'),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     // Кнопка переключения формы
                     TextButton(
                       onPressed: _toggleForm,
@@ -132,16 +132,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _submitForm() async {
+  Future _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
         User? user;
         if (_showSignInForm) {
+          // Проверка существования email перед входом
+          await FirebaseAuth.instance.fetchSignInMethodsForEmail(_emailController.text);
           user = await _authService.signInWithEmailAndPassword(
             _emailController.text,
             _passwordController.text,
           );
         } else {
+          // Проверка существования email перед регистрацией
+          await FirebaseAuth.instance.fetchSignInMethodsForEmail(_emailController.text);
           user = await _authService.registerWithEmailAndPassword(
             _emailController.text,
             _passwordController.text,
@@ -156,8 +160,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       } catch (e) {
         print('Ошибка аутентификации: $e');
-        // ... обработка ошибок ...
+        // Показываем попап с ошибкой
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Ошибка'),
+              content: Text(
+                _getErrorMessage(e), // Используем функцию для получения сообщения
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
       }
+    }
+  }
+
+  // Функция для получения более понятного сообщения об ошибке
+  String _getErrorMessage(dynamic e) {
+    if (e is FirebaseAuthException) {
+      switch (e.code) {
+        case 'weak-password':
+          return 'Пароль слишком слабый.';
+        case 'email-already-in-use':
+          return 'Email уже используется.';
+        case 'invalid-email':
+          return 'Неверный email.';
+        case 'user-not-found':
+          return 'Пользователь не найден.';
+        case 'wrong-password':
+          return 'Неверный пароль.';
+        case 'invalid-credential':
+          return 'Неверный email или пароль.'; // Добавленное сообщение
+        default:
+          return 'Произошла ошибка аутентификации.';
+      }
+    } else {
+      return 'Произошла ошибка аутентификации.';
     }
   }
 }
